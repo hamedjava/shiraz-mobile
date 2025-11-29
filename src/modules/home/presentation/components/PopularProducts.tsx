@@ -1,184 +1,104 @@
-"use client";
+// src/modules/home/presentation/components/PopularProducts.tsx
 
-import React, { useRef, useState } from "react";
+import React from "react";
 import Link from "next/link";
-import { ShoppingBag, ArrowLeft, Star } from "lucide-react";
+import Image from "next/image"; 
+import { Product } from "@/app/page";
 
-const PRODUCTS = [
-  {
-    id: 1,
-    title: "هدفون بی‌سیم سونی",
-    model: "WH-1000XM5 - Noise Canceling",
-    price: "۱۲,۵۰۰,۰۰۰",
-    rate: 4.8,
-    image: "/placeholder.png",
-    isNew: true,
-  },
-  {
-    id: 2,
-    title: "اپل واچ سری ۹",
-    model: "Aluminum 45mm - GPS",
-    price: "۱۸,۲۰۰,۰۰۰",
-    rate: 4.9,
-    image: "/placeholder.png",
-    isNew: false,
-  },
-  {
-    id: 3,
-    title: "سامسونگ گلکسی S24",
-    model: "Ultra 5G - 256GB Storage",
-    price: "۶۵,۰۰۰,۰۰۰",
-    rate: 4.7,
-    image: "/placeholder.png",
-    isNew: true,
-  },
-  {
-    id: 4,
-    title: "ایرپاد پرو ۲",
-    model: "Type-C Charging Case",
-    price: "۹,۸۰۰,۰۰۰",
-    rate: 4.6,
-    image: "/placeholder.png",
-    isNew: false,
-  },
-  {
-    id: 5,
-    title: "پلی‌استیشن ۵ اسلیم",
-    model: "Digital Edition - 1TB",
-    price: "۲۶,۵۰۰,۰۰۰",
-    rate: 5.0,
-    image: "/placeholder.png",
-    isNew: true,
-  },
-];
+interface PopularProductsProps {
+  products: Product[];
+}
 
-export const PopularProducts = () => {
-  const sliderRef = useRef<HTMLDivElement>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [startX, setStartX] = useState(0);
-  const [scrollLeft, setScrollLeft] = useState(0);
+const getImageUrl = (coverData: any) => {
+  if (!coverData) return null;
+  let url = "";
+  if (typeof coverData === 'string') {
+      url = coverData;
+  } else if (coverData.url) {
+      url = coverData.url;
+  } else if (coverData.data?.attributes?.url) {
+      url = coverData.data.attributes.url;
+  }
+  if (!url) return null;
+  if (url.startsWith("/")) {
+    return `http://127.0.0.1:1337${url}`;
+  }
+  return url.replace("localhost", "127.0.0.1");
+};
 
-  // --- Drag Logic ---
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (!sliderRef.current) return;
-    setIsDragging(true);
-    setStartX(e.pageX - sliderRef.current.offsetLeft);
-    setScrollLeft(sliderRef.current.scrollLeft);
-  };
-  const handleMouseLeave = () => setIsDragging(false);
-  const handleMouseUp = () => setIsDragging(false);
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging || !sliderRef.current) return;
-    e.preventDefault();
-    const x = e.pageX - sliderRef.current.offsetLeft;
-    const walk = (x - startX) * 1.5;
-    sliderRef.current.scrollLeft = scrollLeft - walk;
-  };
+export const PopularProducts: React.FC<PopularProductsProps> = ({ products }) => {
+
+  if (!products || products.length === 0) {
+    return (
+      <section className="py-10 container mx-auto px-4 text-center text-gray-500">
+        محصولی برای نمایش وجود ندارد.
+      </section>
+    );
+  }
 
   return (
-    <section className="w-full py-20 bg-[#FDFDFD] relative overflow-hidden select-none">
-      <div className="container mx-auto px-4 lg:px-8">
-        
-        {/* --- Header --- */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between mb-12 gap-6">
-            <div className="flex items-start gap-4">
-                {/* نوار عمودی زرد */}
-                <div className="w-1.5 h-16 bg-[#FFD700] rounded-full mt-1 shadow-[0_0_15px_rgba(255,215,0,0.4)]"></div>
+    <section className="py-10 container mx-auto px-4">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold text-gray-800">محصولات پرطرفدار</h2>
+        <Link href="/products" className="text-blue-600 hover:text-blue-800 text-sm font-medium">
+          مشاهده همه
+        </Link>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        {products.map((product) => {
+          const imageUrl = getImageUrl(product.cover);
+          
+          return (
+            <Link
+              // ✅ نکته حیاتی: چون پوشه را product کردی، اینجا هم باید product باشد (بدون s)
+              href={`/product/${product.slug}`}
+              key={product.id}
+              className="group block bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden"
+            >
+              <div className="relative h-56 w-full bg-gray-50 flex items-center justify-center p-4">
+                {imageUrl ? (
+                  <div className="relative w-full h-full">
+                    <Image
+                      src={imageUrl}
+                      alt={product.title}
+                      fill
+                      className="object-contain group-hover:scale-105 transition-transform duration-300"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                      unoptimized={true} 
+                    />
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                    <svg className="w-10 h-10 mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <span className="text-sm">بدون تصویر</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="p-4">
+                {product.category && (
+                   <div className="text-xs text-gray-500 mb-1">
+                     {(product.category as any).title || (product.category as any).attributes?.title}
+                   </div>
+                )}
                 
-                <div>
-                    <div className="flex items-center gap-2 mb-2">
-                        <span className="px-3 py-1 rounded-full bg-[#FFD700]/10 text-[#bfa200] text-xs font-bold border border-[#FFD700]/20">
-                            محصولات منتخب هفته
-                        </span>
-                    </div>
-                    {/* تیتر اصلی: خاکستری متوسط (Gray-600) */}
-                    <h2 className="text-3xl lg:text-4xl font-black text-gray-600 tracking-tight">
-                        محبوب‌ترین‌ها
-                    </h2>
-                </div>
-            </div>
+                <h3 className="font-semibold text-gray-900 mb-3 line-clamp-2 h-12 leading-6">
+                  {product.title}
+                </h3>
 
-            {/* دکمه مشاهده همه */}
-            <Link href="/products" className="text-sm font-bold text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-2 group">
-                مشاهده همه
-                <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-[#FFD700] group-hover:text-white transition-all duration-300">
-                     <ArrowLeft size={16} />
+                <div className="flex items-center justify-between pt-2 border-t border-gray-50">
+                  <span className="text-lg font-bold text-gray-900">
+                    {Number(product.price).toLocaleString("fa-IR")}
+                    <span className="text-xs font-normal text-gray-500 mr-1">تومان</span>
+                  </span>
                 </div>
+              </div>
             </Link>
-        </div>
-
-        {/* --- Slider --- */}
-        <div 
-            ref={sliderRef}
-            onMouseDown={handleMouseDown}
-            onMouseLeave={handleMouseLeave}
-            onMouseUp={handleMouseUp}
-            onMouseMove={handleMouseMove}
-            className={`
-              flex gap-6 overflow-x-auto pb-16 -mx-4 px-4 lg:mx-0 lg:px-0
-              scrollbar-hide cursor-grab active:cursor-grabbing pt-2
-            `}
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-        >
-          {PRODUCTS.map((product) => (
-            <div key={product.id} className="flex-shrink-0 w-[280px]">
-              <Link 
-                href={`/products/${product.id}`}
-                draggable={false}
-                className="group block bg-white rounded-[24px] p-3 border border-gray-100 transition-all duration-500 hover:shadow-2xl hover:shadow-gray-200 hover:-translate-y-1 relative h-full"
-              >
-                {/* Image Area */}
-                <div className="relative w-full aspect-square bg-gray-50 rounded-2xl overflow-hidden mb-4">
-                    {/* New Badge */}
-                    {product.isNew && (
-                        <span className="absolute top-3 right-3 bg-[#FFD700] text-white text-[10px] font-black px-3 py-1 rounded-full z-10 shadow-sm">
-                            NEW
-                        </span>
-                    )}
-                    
-                    <div className="w-full h-full flex items-center justify-center p-6 group-hover:scale-105 transition-transform duration-500">
-                         <ShoppingBag className="text-gray-300 w-24 h-24" />
-                    </div>
-                </div>
-
-                {/* Content */}
-                <div className="px-2 pb-2">
-                    <div className="flex items-center gap-1 mb-2">
-                        <Star size={12} className="fill-[#FFD700] text-[#FFD700]" />
-                        <span className="text-xs font-bold text-gray-400">{product.rate}</span>
-                    </div>
-
-                    {/* Title: خاکستری متوسط (Gray-600) که در هاور کمی تیره میشود (Gray-800) اما سیاه نه */}
-                    <h3 className="text-gray-600 font-bold text-base leading-snug mb-1 line-clamp-1 group-hover:text-gray-800 transition-colors">
-                        {product.title}
-                    </h3>
-                    <p className="text-gray-400 text-xs mb-4 line-clamp-1">
-                        {product.model}
-                    </p>
-
-                    {/* Price Area */}
-                    <div className="flex items-center justify-between mt-4 border-t border-dashed border-gray-100 pt-3">
-                        <div className="flex flex-col">
-                            <span className="text-[10px] text-gray-400 font-medium">قیمت نهایی:</span>
-                            <div className="flex items-center gap-1">
-                                {/* Price: خاکستری تیره نرم (Gray-700) */}
-                                <span className="text-gray-700 font-black text-lg">
-                                    {product.price}
-                                </span>
-                                <span className="text-[10px] text-gray-400 font-bold">تومان</span>
-                            </div>
-                        </div>
-
-                        {/* Add Button: خاکستری تیره نرم (Gray-700) */}
-                        <button className="w-10 h-10 rounded-xl bg-gray-700 text-white flex items-center justify-center group-hover:bg-[#FFD700] group-hover:text-white transition-all duration-300 shadow-lg shadow-gray-200">
-                            <ShoppingBag size={18} />
-                        </button>
-                    </div>
-                </div>
-              </Link>
-            </div>
-          ))}
-        </div>
+          );
+        })}
       </div>
     </section>
   );
