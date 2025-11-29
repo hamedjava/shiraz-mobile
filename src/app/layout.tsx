@@ -4,11 +4,11 @@ import "@/styles/globals.css";
 import { Header } from "@/core/components/layout/Header";
 import { Footer } from "@/core/components/layout/Footer";
 
-// تنظیم فونت ایران‌یکان
+// تنظیم صحیح آدرس‌دهی فونت‌ها بر اساس ساختار پوشه شما (src/app/fonts)
 const iranYekan = localFont({
   src: [
     {
-      path: "./fonts/yekan_normal.ttf",
+      path: "./fonts/yekan_normal.ttf", // مسیر نسبی: پوشه fonts کنار همین فایل است
       weight: "400",
       style: "normal",
     },
@@ -18,7 +18,6 @@ const iranYekan = localFont({
       style: "normal",
     },
   ],
-  // ✅ نکته: نام متغیر باید دقیقاً با چیزی که در Hero استفاده شده یکی باشد
   variable: "--font-iranyekan", 
   display: "swap",
 });
@@ -36,15 +35,17 @@ export default function RootLayout({
   return (
     <html lang="fa" dir="rtl">
       <body
-        // ✅ اضافه کردن کلاس فونت به بادی برای اطمینان از اعمال سراسری
-        className={`${iranYekan.variable} font-[family-name:var(--font-iranyekan)] antialiased bg-white min-h-screen flex flex-col text-gray-900`}
+        className={`${iranYekan.variable} font-sans antialiased bg-gray-50 min-h-screen flex flex-col text-gray-900`}
       >
+        {/* هدر سراسری */}
         <Header />
 
-        <main className="flex-grow pt-24">
+        {/* بدنه اصلی صفحه */}
+        <main className="flex-grow"> 
           {children}
         </main>
 
+        {/* فوتر سراسری */}
         <Footer />
       </body>
     </html>
