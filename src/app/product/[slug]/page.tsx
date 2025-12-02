@@ -4,9 +4,9 @@ import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { mockPopularProducts } from "@/core/data/mock-products"; // اضافه شده
 
 // --- استایل فونت وزیرمتن ---
-// این بخش فونت زیبا را از گوگل لود می‌کند تا ظاهر سایت عالی شود
 const FontStyle = () => (
   <style>{`
     @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100;300;400;500;700;900&display=swap');
@@ -14,27 +14,54 @@ const FontStyle = () => (
   `}</style>
 );
 
-// --- توابع کمکی (بدون تغییر در منطق) ---
+// --- توابع کمکی ---
 const getImageUrl = (coverData: any) => {
   if (!coverData) return null;
-  let url = "";
+  
+  // حالت ۱: آدرس ساده (برای محصولات دستی)
   if (typeof coverData === 'string') {
-      url = coverData;
-  } else if (coverData.url) {
+      return coverData;
+  }
+  
+  // حالت ۲: ساختار استرپی
+  let url = "";
+  if (coverData.url) {
       url = coverData.url;
   } else if (coverData.data?.url) {
       url = coverData.data.url;
   } else if (coverData.data?.attributes?.url) {
       url = coverData.data.attributes.url;
   }
+  
   if (!url) return null;
+  
+  // اگر آدرس نسبی بود، آدرس پایه را اضافه کن
   if (url.startsWith("/")) {
     return `http://127.0.0.1:1337${url}`;
   }
   return url.replace("localhost", "127.0.0.1");
 };
 
+// --- تابع اصلی دریافت محصول (اصلاح شده) ---
 async function getProduct(slug: string) {
+  
+  // ۱. اول چک می‌کنیم محصول دستی (Mock) است؟
+  const localProduct = mockPopularProducts.find(p => p.attributes.slug === slug);
+  if (localProduct) {
+    // تبدیل ساختار Mock به ساختاری که کامپوننت انتظار دارد
+    return {
+      ...localProduct.attributes,
+      // در داده‌های ماک ما coverUrl داریم، اینجا آن را به cover تبدیل می‌کنیم
+      cover: localProduct.attributes.coverUrl, 
+      category: {
+        title: localProduct.attributes.category?.title
+      },
+      // توضیحات پیش‌فرض برای محصولات دستی
+      description: "این یک محصول فوق‌العاده با کیفیت عالی و قیمت مناسب است که به صورت آزمایشی در سیستم ثبت شده است." 
+    };
+  }
+
+  // ۲. اگر دستی نبود، از API می‌گیریم
   try {
     const res = await fetch(
       `http://127.0.0.1:1337/api/products?filters[slug][$eq]=${slug}&populate=*`,
@@ -43,7 +70,9 @@ async function getProduct(slug: string) {
     if (!res.ok) return null;
     const json = await res.json();
     if (!json.data || json.data.length === 0) return null;
-    return json.data[0];
+    
+    // بازگرداندن attributes محصول استرپی
+    return json.data[0].attributes || json.data[0];
   } catch (error) {
     console.error("Error fetching product:", error);
     return null;
@@ -65,21 +94,25 @@ interface PageProps {
 export default async function ProductDetailsPage(props: PageProps) {
   const params = await props.params;
   const { slug } = params;
-  const product = await getProduct(slug);
+  
+  // فراخوانی تابع اصلاح شده
+  const productData = await getProduct(slug);
 
-  if (!product) notFound();
+  if (!productData) notFound();
 
-  const productData = product.attributes || product;
+  // استخراج داده‌ها (الان productData یک آبجکت تمیز است)
   const { title, description, price, cover, category } = productData;
   const imageUrl = getImageUrl(cover);
-  const categoryTitle = category?.data?.attributes?.title || category?.title || category?.data?.title;
+  
+  // هندل کردن تایتل دسته بندی برای هر دو حالت
+  const categoryTitle = category?.title || category?.data?.attributes?.title || category?.data?.title;
 
   return (
     <>
       <FontStyle />
       <div className="bg-[#FAFAFA] min-h-screen pb-20 text-slate-700" dir="rtl">
         
-        {/* نوار نویگیشن ساده */}
+        {/* نوار نویگیشن */}
         <nav className="container mx-auto px-4 lg:px-8 py-6 text-sm flex items-center gap-3 text-slate-400 overflow-x-auto">
             <Link href="/" className="hover:text-indigo-600 transition-colors">فروشگاه</Link>
             <span className="text-slate-300">/</span>
@@ -91,9 +124,8 @@ export default async function ProductDetailsPage(props: PageProps) {
         <main className="container mx-auto px-4 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
             
-            {/* گالری تصویر (تمیز و مینیمال) */}
+            {/* گالری تصویر */}
             <div className="lg:col-span-7 bg-white rounded-[2rem] p-8 lg:p-16 relative group">
-               {/* دکمه لایک شناور */}
                <button className="absolute top-6 right-6 p-3 rounded-full bg-gray-50 text-gray-400 hover:bg-red-50 hover:text-red-500 transition-all duration-300">
                  <Icons.Heart />
                </button>
@@ -102,7 +134,7 @@ export default async function ProductDetailsPage(props: PageProps) {
                 {imageUrl ? (
                   <Image
                     src={imageUrl}
-                    alt={title}
+                    alt={title || "تصویر محصول"}
                     fill
                     className="object-contain drop-shadow-xl group-hover:scale-105 transition-transform duration-500 ease-out"
                     priority
@@ -135,9 +167,9 @@ export default async function ProductDetailsPage(props: PageProps) {
                  </div>
               </div>
 
-              {/* توضیحات کوتاه */}
+              {/* توضیحات */}
               <div className="text-slate-500 leading-loose text-justify border-t border-slate-100 pt-6">
-                  {description}
+                  {description || "توضیحاتی برای این محصول ثبت نشده است."}
               </div>
 
               {/* باکس قیمت و خرید */}
